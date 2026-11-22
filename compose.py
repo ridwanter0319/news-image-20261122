@@ -147,7 +147,7 @@ def numbers_strip(draw):
         x = 16 + i * colw + 8
         if i:
             draw.line((16 + i * colw, y0 + 6, 16 + i * colw, y1 - 6), fill=LINE, width=1)
-        draw.text((x, y0 + 13), big, font=serif_b(18), fill=NAVY)
+        draw.text((x, y0 + 13), big, font=serif_b(18), fill=RED)
         block(draw, x, y0 + 34, label, sans(8), colw - 16, 9.5, color=GRAY, max_lines=2)
 
 
@@ -217,17 +217,17 @@ def draw_lead_art(draw, idx, x, y, w, h):
 
 
 def leads(draw):
-    y0, hh = 238, 232
+    y0, hh = 238, 224
     colw, gap = 322, 13
     for i, (num, tag, head, body, src) in enumerate(LEADS):
         x = 16 + i * (colw + gap)
         draw.rectangle((x, y0, x + colw, y0 + hh), fill=PAPER, outline=LINE, width=1)
-        draw_lead_art(draw, i, x + 8, y0 + 8, colw - 16, 100)
+        draw_lead_art(draw, i, x + 8, y0 + 8, colw - 16, 92)
         draw.ellipse((x + 14, y0 + 14, x + 40, y0 + 40), fill=RED)
         nf = sans_b(15)
         draw.text((x + 27 - draw.textlength(num, font=nf) / 2, y0 + 18), num, font=nf,
                   fill=(255, 255, 255))
-        ty = y0 + 116
+        ty = y0 + 108
         draw.text((x + 10, ty), tag, font=sans_b(10), fill=RED)
         ty = block(draw, x + 10, ty + 15, head, serif_b(15), colw - 20, 18)
         ty = fit_block(draw, x + 10, ty + 3, body, colw - 20, y0 + hh - ty - 22,
@@ -254,7 +254,7 @@ CARDS = [
      "Reports", "CLAIM"),
     ("8", "TEL AVIV · POLITICS", 'Eisenkot invites Likud to "marathon" coalition talks',
      "The opposition leader opens the door to Netanyahu's party as the split grows "
-     "between the Peace Council and the premier's administration over Trump's Gaza plan.",
+     "between the Peace Council and the premier's camp over Trump's Gaza plan.",
      "Yedioth Ahronoth", ""),
     ("9", "WASHINGTON · CYBER", "FBI probes a hack of its criminal database",
      "The NCIC system — fugitives, missing persons, stolen property — is "
@@ -278,17 +278,31 @@ CARDS = [
 
 def cards(draw):
     colw, gap = 192, 8
-    ys = (476, 578)
+    ys = (468, 586)
     for i, (num, tag, head, body, src, claim) in enumerate(CARDS):
         x = 16 + (i % 5) * (colw + gap)
         y0 = ys[i // 5]
-        hh = 98
+        hh = 112
         draw.rectangle((x, y0, x + colw, y0 + hh), fill=PAPER, outline=LINE, width=1)
         draw.rectangle((x, y0, x + colw, y0 + 15), fill=NAVY)
         draw.text((x + 6, y0 + 3), num, font=sans_b(10), fill=GOLD)
         draw.text((x + 26, y0 + 3), tag, font=sans_b(7), fill=(255, 255, 255))
-        ty = block(draw, x + 7, y0 + 19, head, serif_b(11), colw - 14, 13, max_lines=2)
-        fit_block(draw, x + 7, ty + 2, body, colw - 14, y0 + hh - ty - 16, (9, 8))
+        ty = block(draw, x + 7, y0 + 19, head, serif_b(11), colw - 14, 12, max_lines=3)
+        # Body at a fixed readable size; as many full lines as the card
+        # holds, so no story is cut mid-sentence where it can be helped.
+        bfnt = sans(8.5)
+        lines = wrap(draw, body, bfnt, colw - 14)
+        max_lines = max(1, int((y0 + hh - 14 - (ty + 2)) // 10.5))
+        if len(lines) > max_lines:
+            lines = lines[:max_lines]
+            last = lines[-1]
+            while last and draw.textlength(last + " …", font=bfnt) > colw - 14:
+                last = last.rsplit(" ", 1)[0]
+            lines[-1] = last + " …"
+        by = ty + 2
+        for ln in lines:
+            draw.text((x + 7, by), ln, font=bfnt, fill=INK)
+            by += 10.5
         tail = "(" + src + ")" + (" · " + claim if claim else "")
         draw.text((x + 7, y0 + hh - 13), tail, font=serif_i(8), fill=GRAY)
 
@@ -342,16 +356,16 @@ def brief_item(draw, x, y, w, num, place, text):
     if cur:
         lines.append(cur)
     for i, ln in enumerate(lines[:3]):
-        draw.text((x + (pw if i == 0 else 0), y + i * 9), ln, font=fnt, fill=INK)
-    return y + max(1, len(lines[:3])) * 9 + 2
+        draw.text((x + (pw if i == 0 else 0), y + i * 8.5), ln, font=fnt, fill=INK)
+    return y + max(1, len(lines[:3])) * 8.5 + 1.5
 
 
 def briefs(draw):
-    draw.rectangle((16, 682, 1008, 700), fill=RED)
-    draw.text((24, 686), "ALSO ON SUNDAY 22 NOVEMBER — BRIEFS 14–40", font=sans_b(11),
+    draw.rectangle((16, 704, 1008, 722), fill=RED)
+    draw.text((24, 708), "ALSO ON SUNDAY 22 NOVEMBER — BRIEFS 14–40", font=sans_b(11),
               fill=(255, 255, 255))
     colw, gap = 322, 13
-    ys = [706] * 3
+    ys = [728] * 3
     for i, (num, place, text) in enumerate(BRIEFS):
         c = i % 3
         x = 16 + c * (colw + gap)
@@ -407,11 +421,15 @@ def in_poly(lon, lat, poly):
     return inside
 
 
+PIN_OFF = {2: (0, -2), 4: (5, 3), 8: (-6, 3), 10: (6, 6), 11: (-4, -3),
+           12: (-5, 3), 13: (5, -4)}
+
+
 def world_map(draw):
-    x0, y0, x1, y1 = 16, 888, 436, 1014
+    x0, y0, x1, y1 = 16, 894, 436, 1014
     draw.rectangle((x0, y0, x1, y1), fill=(238, 231, 211), outline=LINE, width=1)
     draw.text((x0 + 8, y0 + 5), "WHERE IT HAPPENED", font=sans_b(10), fill=NAVY)
-    mx, my, mw, mh = x0 + 10, y0 + 24, x1 - x0 - 20, 96
+    mx, my, mw, mh = x0 + 10, y0 + 24, x1 - x0 - 20, 90
 
     def proj(lon, lat):
         return (mx + (lon + 180) / 360 * mw, my + (80 - lat) / 145 * mh)
@@ -433,10 +451,15 @@ def world_map(draw):
         lat += 2.4
     for i, (lon, lat) in enumerate(PINS):
         px, py = proj(lon, lat)
-        draw.ellipse((px - 6, py - 6, px + 6, py + 6), fill=RED)
+        dx, dy = PIN_OFF.get(i + 1, (0, 0))
+        cx, cy = px + dx, py + dy
+        if dx or dy:
+            draw.ellipse((px - 1.5, py - 1.5, px + 1.5, py + 1.5), fill=RED)
+            draw.line((px, py, cx, cy), fill=RED, width=1)
+        draw.ellipse((cx - 6, cy - 6, cx + 6, cy + 6), fill=RED, outline=(255, 255, 255), width=1)
         label = str(i + 1)
         fnt = sans_b(7)
-        draw.text((px - draw.textlength(label, font=fnt) / 2, py - 4), label,
+        draw.text((cx - draw.textlength(label, font=fnt) / 2, cy - 4), label,
                   font=fnt, fill=(255, 255, 255))
 
 
@@ -460,8 +483,8 @@ SOURCES = (
 def footer(draw):
     world_map(draw)
     x = 448
-    draw.rectangle((x, 888, 1008, 1014), fill=PAPER, outline=LINE, width=1)
-    ty = block(draw, x + 10, 894, DATE_CHECK, sans(9), 540, 11.5)
+    draw.rectangle((x, 894, 1008, 1014), fill=PAPER, outline=LINE, width=1)
+    ty = block(draw, x + 10, 900, DATE_CHECK, sans(9), 540, 11.5)
     draw.line((x + 10, ty + 3, 998, ty + 3), fill=LINE, width=1)
     block(draw, x + 10, ty + 7, SOURCES, serif_i(9), 540, 11.5, color=GRAY)
 
